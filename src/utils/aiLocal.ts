@@ -1,7 +1,7 @@
 import type { Contract, DailyRow } from '../types'
 import { formatMoney } from './format'
 
-export type ChatMode = 'local' | 'gemini'
+export type ChatMode = 'local' | 'deepseek'
 
 const STATUS_RU: Record<string, string> = {
   OVERPAYMENT: 'излишек (OVERPAYMENT)',

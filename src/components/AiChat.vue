@@ -4,11 +4,11 @@ import type { Contract } from '../types'
 import type { ChatMode } from '../utils/aiLocal'
 import { buildAnomalySummary, buildLocalAnswer } from '../utils/aiLocal'
 import {
-  askGemini,
-  clearGeminiKey,
-  loadGeminiKey,
-  saveGeminiKey,
-} from '../utils/aiGemini'
+  askDeepseek,
+  clearDeepseekKey,
+  loadDeepseekKey,
+  saveDeepseekKey,
+} from '../utils/aiDeepseek'
 
 const props = defineProps<{
   contracts: Contract[]
@@ -25,8 +25,8 @@ interface ChatMessage {
 const open = ref(true)
 const settingsOpen = ref(false)
 const mode = ref<ChatMode>('local')
-const geminiKeyInput = ref(loadGeminiKey())
-const geminiKeySaved = ref(!!loadGeminiKey())
+const deepseekKeyInput = ref(loadDeepseekKey())
+const deepseekKeySaved = ref(!!loadDeepseekKey())
 const input = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -48,11 +48,11 @@ const QUICK = [
 ] as const
 
 const modeLabel = computed(() =>
-  mode.value === 'local' ? 'Локальный помощник' : 'Gemini (бесплатно)',
+  mode.value === 'local' ? 'Локальный помощник' : 'DeepSeek',
 )
 
 watch(mode, (m) => {
-  if (m === 'gemini' && !geminiKeySaved.value) {
+  if (m === 'deepseek' && !deepseekKeySaved.value) {
     settingsOpen.value = true
   }
 })
@@ -66,18 +66,18 @@ function scrollToBottom() {
 }
 
 function saveKey() {
-  const key = geminiKeyInput.value.trim()
-  saveGeminiKey(key)
-  geminiKeySaved.value = !!key
-  geminiKeyInput.value = key
-  error.value = key ? null : 'Вставьте API-ключ Gemini, чтобы включить облачный режим.'
+  const key = deepseekKeyInput.value.trim()
+  saveDeepseekKey(key)
+  deepseekKeySaved.value = !!key
+  deepseekKeyInput.value = key
+  error.value = key ? null : 'Вставьте API-ключ DeepSeek, чтобы включить облачный режим.'
 }
 
 function clearKey() {
-  clearGeminiKey()
-  geminiKeyInput.value = ''
-  geminiKeySaved.value = false
-  if (mode.value === 'gemini') {
+  clearDeepseekKey()
+  deepseekKeyInput.value = ''
+  deepseekKeySaved.value = false
+  if (mode.value === 'deepseek') {
     mode.value = 'local'
   }
 }
@@ -97,16 +97,16 @@ async function sendText(text: string) {
     if (mode.value === 'local') {
       answer = buildLocalAnswer(q, props.contracts, props.selected, props.fileName)
     } else {
-      const key = loadGeminiKey()
+      const key = loadDeepseekKey()
       if (!key) {
-        throw new Error('Сначала сохраните API-ключ Gemini в настройках.')
+        throw new Error('Сначала сохраните API-ключ DeepSeek в настройках.')
       }
       const summary = buildAnomalySummary(
         props.contracts,
         props.selected,
         props.fileName,
       )
-      answer = await askGemini(key, q, summary)
+      answer = await askDeepseek(key, q, summary)
     }
     messages.value.push({ id: nextId++, role: 'assistant', text: answer })
   } catch (e) {
@@ -140,13 +140,13 @@ function onQuick(q: string) {
     </button>
 
     <div v-if="open" class="ai-panel">
-      <div class="privacy-note" :class="{ warn: mode === 'gemini' }">
+      <div class="privacy-note" :class="{ warn: mode === 'deepseek' }">
         <template v-if="mode === 'local'">
           Режим «Локальный помощник»: ответы строятся по уже разобранному файлу в браузере.
           Ничего никуда не отправляется.
         </template>
         <template v-else>
-          Режим Gemini: в Google уходит только компактная текстовая сводка аномалий
+          Режим DeepSeek: в DeepSeek уходит только сводка аномалий
           (названия салонов, даты, статусы, суммы) — не исходный Excel. Не включайте,
           если не хотите делиться сводкой.
         </template>
@@ -157,7 +157,7 @@ function onQuick(q: string) {
         class="settings-toggle"
         @click="settingsOpen = !settingsOpen"
       >
-        {{ settingsOpen ? '▾ Настройки' : '▸ Настройки (ключ Gemini, режим)' }}
+        {{ settingsOpen ? '▾ Настройки' : '▸ Настройки (ключ DeepSeek, режим)' }}
       </button>
 
       <div v-if="settingsOpen" class="settings">
@@ -168,28 +168,33 @@ function onQuick(q: string) {
             Локальный помощник (по умолчанию, без ключа)
           </label>
           <label class="radio">
-            <input v-model="mode" type="radio" value="gemini" :disabled="!geminiKeySaved" />
-            Gemini (бесплатно)
-            <span v-if="!geminiKeySaved" class="hint"> — сначала сохраните ключ</span>
+            <input v-model="mode" type="radio" value="deepseek" :disabled="!deepseekKeySaved" />
+            DeepSeek
+            <span v-if="!deepseekKeySaved" class="hint"> — сначала сохраните ключ</span>
           </label>
         </fieldset>
 
-        <label class="key-label" for="gemini-key">API-ключ Google Gemini</label>
+        <label class="key-label" for="deepseek-key">API-ключ DeepSeek</label>
         <div class="key-row">
           <input
-            id="gemini-key"
-            v-model="geminiKeyInput"
+            id="deepseek-key"
+            v-model="deepseekKeyInput"
             type="password"
             autocomplete="off"
-            placeholder="Вставьте ключ с aistudio.google.com/apikey"
+            placeholder="Вставьте ключ с platform.deepseek.com/api_keys"
             class="key-input"
           />
           <button type="button" class="btn-save" @click="saveKey">Сохранить</button>
           <button type="button" class="btn-clear" @click="clearKey">Очистить</button>
         </div>
         <p class="key-status">
-          <template v-if="geminiKeySaved">Ключ сохранён в браузере (localStorage).</template>
-          <template v-else>Ключ не задан. Бесплатный ключ: https://aistudio.google.com/apikey</template>
+          <template v-if="deepseekKeySaved">Ключ сохранён в браузере (localStorage).</template>
+          <template v-else>
+            Ключ не задан.
+            <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener"
+              >https://platform.deepseek.com/api_keys</a
+            >
+          </template>
         </p>
       </div>
 
