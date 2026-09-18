@@ -4,7 +4,7 @@ import Dropzone from './components/Dropzone.vue'
 import SalonCard from './components/SalonCard.vue'
 import DailyTable from './components/DailyTable.vue'
 import SummaryBar from './components/SummaryBar.vue'
-import AiChatStub from './components/AiChatStub.vue'
+import AiChat from './components/AiChat.vue'
 import { parseOsvFile } from './utils/parser'
 import type { Contract, ParseResult } from './types'
 
@@ -83,7 +83,11 @@ function reset() {
           <h2 class="content-title">{{ selected.name }}</h2>
           <SummaryBar :contract="selected" />
           <DailyTable :contract="selected" />
-          <AiChatStub />
+          <AiChat
+            :contracts="result.contracts"
+            :selected="selected"
+            :file-name="result.fileName"
+          />
         </section>
       </div>
     </main>
